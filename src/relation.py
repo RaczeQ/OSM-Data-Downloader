@@ -1,7 +1,10 @@
+import logging
 from pathlib import Path
 
 import geopandas as gpd
 import requests
+from alive_progress import alive_bar
+from http_request_randomizer.requests.proxy.requestProxy import RequestProxy
 from shapely.geometry import shape
 
 from .mongo_connector import save_relation
@@ -11,15 +14,26 @@ BASE_URL = "https://nominatim.openstreetmap.org/search.php?q={}&polygon_geojson=
 
 def load_area(relation_name):
     url = BASE_URL.format(relation_name)
-    r = requests.get(url)
-    relation = r.json()[0]
-    osm_id = relation['osm_id']
-    name = relation['display_name']
-    bbox = relation['boundingbox']
-    shp = shape(relation['geojson'])
-    gdf = gpd.GeoDataFrame({'geometry':[shp]})
-    relation_cls = BoundaryRelation(osm_id, relation_name, name, bbox, gdf)
-    return relation_cls
+    req_proxy = RequestProxy(log_level=logging.ERROR)
+    r = None
+    with alive_bar(title=f"[{relation_name}] | Loading Nominatim query", title_length=60) as bar:
+        while r is None:
+            r = req_proxy.generate_proxied_request(url)
+            if r is None:
+                print('Changing faulty proxy')
+        bar()
+    relations = r.json()
+    for relation in relations:
+        if relation['osm_type'] != 'relation' and relation["class"] != "boundary":
+            print('skipping relation - not boundary')
+            continue
+        osm_id = relation['osm_id']
+        name = relation['display_name']
+        bbox = relation['boundingbox']
+        shp = shape(relation['geojson'])
+        gdf = gpd.GeoDataFrame({'geometry':[shp]})
+        relation_cls = BoundaryRelation(osm_id, relation_name, name, bbox, gdf)
+        return relation_cls
 
 class BoundaryRelation:
     def __init__(self, osm_id, relation_name, administration_name, bbox, geojson_shp):

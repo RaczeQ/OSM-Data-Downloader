@@ -39,12 +39,12 @@ def save_gdf(connection_string, gdf, parent_osm_id, category):
     coll = db.relations
     dict_records = []
     gdf_columns = gdf.columns
-    with alive_bar(gdf.shape[0], title="Cleaning records from empty values") as bar:
+    with alive_bar(gdf.shape[0], title=f"[{parent_osm_id}] {category} | Cleaning records from empty values", title_length=60) as bar:
         for row in gdf.itertuples():
             dct = {col:row[i + 1] for i, col in enumerate(gdf_columns) if pd.notnull(row[i + 1])}
             dict_records.append(dct)
             bar()
-    with alive_bar(len(dict_records), title="Saving relations to MongoDB") as bar:
+    with alive_bar(len(dict_records), title=f"[{parent_osm_id}] {category} | Saving relations to MongoDB", title_length=60) as bar:
         for record in dict_records:
             document = record
             document['osm_id'] = int(document['id'])
@@ -53,8 +53,8 @@ def save_gdf(connection_string, gdf, parent_osm_id, category):
             del document['id']
             document['geometry'] = geometry.mapping(document['geometry'])
             try:
-                coll.update({'parent_osm_id':document['parent_osm_id'], 'osm_id':document['osm_id']}, document, True)
+                coll.update({'parent_osm_id':document['parent_osm_id'], 'osm_id':document['osm_id'], 'category':document['category']}, document, True)
             except WriteError as err:
-                print(err)
+                # print(err)
                 print(f"Skipping record: {document['osm_id']}")
             bar()

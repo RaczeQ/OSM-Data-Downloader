@@ -7,7 +7,7 @@ import pandas as pd
 from geojson import Point
 from OSMPythonTools.overpass import Overpass
 from shapely.geometry import shape
-from alive_progress import alive_bar, show_spinners
+from alive_progress import alive_bar
 
 from .mongo_connector import save_gdf
 from .overpass_queries import QUERIES
@@ -65,16 +65,22 @@ def _load_relation(osm_id, category):
         for t in category.types:
             query_body += f'{t}{q}(area.searchArea);'
     builded_query = query_blank.format(area_id=3600000000+osm_id, body=query_body)
-    with alive_bar(title="Loading OSM query") as bar:
-        result = overpass.query(builded_query, timeout=600)
+    with alive_bar(title=f"[{osm_id}] {category.name} | Loading OSM query", title_length=60) as bar:
+        result = None
+        while result is None:
+            try:
+                result = overpass.query(builded_query, timeout=600)
+            except: # printed by OSMPythonTools already
+                pass
         bar()
     elements = result.elements()
-    with alive_bar(len(elements), title="Parsing geometries") as bar:
+    with alive_bar(len(elements), title=f"[{osm_id}] {category.name} | Parsing geometries", title_length=60) as bar:
         for el in elements:
             try:
                 gdfs.extend(_parse_geometry(el))
             except Exception as ex:
-                print(f"Error loading geometry for {el.type()} {el.id()} - {ex}")
+                # print(f"Error loading geometry for {el.type()} {el.id()} - {ex}")
+                print(f"Error loading geometry for {el.type()} {el.id()}")
             bar()
     return gdfs
 
@@ -94,7 +100,7 @@ def load_relations_to_file(osm_id, dir_path_obj):
             saved = False
 
             removed_keys = []
-            with alive_bar(title="Saving GeoDataFrame to file") as bar:
+            with alive_bar(title=f"[{osm_id}] {category.name} | Saving GeoDataFrame to file", title_length=60) as bar:
                 while not saved:
                     try:
                         source_json = multi_gdf.to_json(na='drop')
@@ -117,10 +123,9 @@ def load_relations_to_mongo(osm_id, connection_string):
     for category in QUERIES:
         gdfs = _load_relation(osm_id, category)
         if len(gdfs) > 0:
-            with alive_bar(title="Concatenating GeoDataFrames") as bar:
+            with alive_bar(title=f"[{osm_id}] {category.name} | Concatenating GeoDataFrames", title_length=60) as bar:
                 multi_gdf = gpd.GeoDataFrame(gdfs)
                 bar()
             # multi_gdf.sort_values(by=['id'], inplace=True)
             save_gdf(connection_string, multi_gdf, osm_id, category.name)
-        print(f"{category.name} - Loaded {len(gdfs)} elements")
         
