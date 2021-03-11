@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Union
 
 import geopandas as gpd
 import requests
@@ -11,12 +12,18 @@ from .mongo_connector import save_relation
 from .overpass_wrapper import load_relations_to_file, load_relations_to_mongo
 
 BASE_URL = "https://nominatim.openstreetmap.org/search.php?q={}&polygon_geojson=1&format=json"
+BASE_URL_ID = "https://nominatim.openstreetmap.org/lookup?osm_ids=R{}&polygon_geojson=1&format=json"
 
-def load_area(relation_name):
-    url = BASE_URL.format(relation_name)
+def load_area(relation: Union[str, int]):
+    relation_name = None
+    if isinstance(relation, str):
+        url = BASE_URL.format(relation)
+        relation_name = relation
+    else:
+        url = BASE_URL_ID.format(relation)
     req_proxy = RequestProxy(log_level=logging.ERROR)
     r = None
-    with alive_bar(title=f"[{relation_name}] | Loading Nominatim query", title_length=60) as bar:
+    with alive_bar(title=f"[{str(relation)}] | Loading Nominatim query", title_length=60) as bar:
         while r is None:
             r = req_proxy.generate_proxied_request(url)
             if r is None:
@@ -29,6 +36,8 @@ def load_area(relation_name):
             continue
         osm_id = relation['osm_id']
         name = relation['display_name']
+        if relation_name is None:
+            relation_name = name
         bbox = relation['boundingbox']
         shp = shape(relation['geojson'])
         gdf = gpd.GeoDataFrame({'geometry':[shp]})
