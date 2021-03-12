@@ -9,7 +9,7 @@ from OSMPythonTools.overpass import Overpass
 from shapely.geometry import shape
 from alive_progress import alive_bar
 
-from .mongo_connector import save_gdf
+from .mongo_connector import save_data
 from .overpass_queries import QUERIES
 
 query_blank = '''
@@ -87,9 +87,9 @@ def _load_relation(osm_id, category):
 
 def load_relations_to_file(osm_id, dir_path_obj):
     for category in QUERIES:
-        gdfs = _load_relation(osm_id, category)
-        if len(gdfs) > 0:
-            multi_gdf = gpd.GeoDataFrame(gdfs)
+        dicts = _load_relation(osm_id, category)
+        if len(dicts) > 0:
+            multi_gdf = gpd.GeoDataFrame(dicts)
             multi_gdf.sort_values(by=['id'], inplace=True)
 
             if category.subdirectory:
@@ -117,15 +117,11 @@ def load_relations_to_file(osm_id, dir_path_obj):
             if len(removed_keys) > 0:
                 print(f"Removed keys because of errors: {removed_keys}")
 
-        print(f"{category.name} - Loaded {len(gdfs)} elements")
+        print(f"{category.name} - Loaded {len(dicts)} elements")
 
 def load_relations_to_mongo(osm_id, connection_string):
     for category in QUERIES:
-        gdfs = _load_relation(osm_id, category)
-        if len(gdfs) > 0:
-            with alive_bar(title=f"[{osm_id}] {category.name} | Concatenating GeoDataFrames", title_length=60) as bar:
-                multi_gdf = gpd.GeoDataFrame(gdfs)
-                bar()
-            # multi_gdf.sort_values(by=['id'], inplace=True)
-            save_gdf(connection_string, multi_gdf, osm_id, category.name)
+        dicts = _load_relation(osm_id, category)
+        if len(dicts) > 0:
+            save_data(connection_string, dicts, osm_id, category.name)
         
