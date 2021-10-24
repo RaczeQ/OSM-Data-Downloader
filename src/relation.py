@@ -72,5 +72,4 @@ class BoundaryRelation:
         load_relations_to_mongo(self.gdf.osm_id[0], connection_string)
 
     def __str__(self):
-        # return f"Osm Id: {self.gdf.osm_id[0]} ({self.gdf.area_id[0]})\nName: {self.gdf.administration_name[0]}\nBounding box: {self.bounding_box}"
         return f"Osm Id: {self.gdf.osm_id[0]}\nName: {self.gdf.administration_name[0]}"
