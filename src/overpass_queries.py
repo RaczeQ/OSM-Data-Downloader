@@ -207,5 +207,18 @@ QUERIES = [
     ]),
     CategoryQuery("roads_bike", [OSM_W], [
         '["highway"]["area"!~"yes"]["highway"!~"abandoned|construction|corridor|elevator|escalator|footway|motor|planned|platform|proposed|raceway|steps"]["bicycle"!~"no"]["service"!~"private"]',
-    ])
+    ]),
+    CategoryQuery("greenery", [OSM_N, OSM_W, OSM_R], [
+        '["landuse"="grass"]',
+        '["landuse"="allotments"]',
+        '["landuse"="forest"]',
+        '["landuse"="flowerbed"]',
+        '["landuse"="meadow"]',
+        '["landuse"="village_green"]',
+        '["natural"="grassland"]',
+        '["natural"="scrub"]',
+        '["landuse"="garden"]',
+        '["leisure"="park"]',
+        '["landuse"="recreation_ground"]'
+    ]),
 ]
