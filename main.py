@@ -1,14 +1,8 @@
 from src.relation import load_area
 
 cities = [
-    'Vienna, Austria',
-    'Budapest, Hungary',
-    'Cork, Ireland',
-    'Dublin, Ireland',
-    'Milan, Italy',
-    'Oslo, Norway',
-    'Warsaw, Poland',
     'Greater London, UK',
+    2604796
 ]
 
 for city in cities:

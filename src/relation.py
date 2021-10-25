@@ -1,12 +1,9 @@
-import logging
 from pathlib import Path
 from typing import Union
 
 import geopandas as gpd
-import requests
-from alive_progress import alive_bar
-from http_request_randomizer.requests.proxy.requestProxy import RequestProxy
-from shapely.geometry import shape
+from OSMPythonTools.nominatim import Nominatim
+from shapely.wkt import loads
 
 from .mongo_connector import save_relation
 from .overpass_wrapper import load_relations_to_file, load_relations_to_mongo
@@ -16,20 +13,13 @@ BASE_URL_ID = "https://nominatim.openstreetmap.org/lookup?osm_ids=R{}&polygon_ge
 
 def load_area(relation: Union[str, int]):
     relation_name = None
+    nomin = Nominatim()
     if isinstance(relation, str):
-        url = BASE_URL.format(relation)
+        relations = nomin.query(relation, lookup = False, reverse = False, polygon_geojson = True, format = 'json', wkt = True).toJSON()
         relation_name = relation
     else:
-        url = BASE_URL_ID.format(relation)
-    req_proxy = RequestProxy(log_level=logging.ERROR)
-    r = None
-    with alive_bar(title=f"[{str(relation)}] | Loading Nominatim query", title_length=60) as bar:
-        while r is None:
-            r = req_proxy.generate_proxied_request(url)
-            if r is None:
-                print('Changing faulty proxy')
-        bar()
-    relations = r.json()
+        relations = nomin.query(f'R{relation}', lookup = True, reverse = False, polygon_geojson = True, format = 'json', wkt = True).toJSON()
+
     for relation in relations:
         if relation['osm_type'] != 'relation' and relation["class"] != "boundary":
             print('skipping relation - not boundary')
@@ -39,7 +29,7 @@ def load_area(relation: Union[str, int]):
         if relation_name is None:
             relation_name = name
         bbox = relation['boundingbox']
-        shp = shape(relation['geojson'])
+        shp = loads(relation['geotext'])
         gdf = gpd.GeoDataFrame({'geometry':[shp]})
         relation_cls = BoundaryRelation(osm_id, relation_name, name, bbox, gdf)
         return relation_cls

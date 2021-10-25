@@ -1,12 +1,9 @@
-import json
 from functools import singledispatch
-from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 from geojson import Point
 from OSMPythonTools.overpass import Overpass
-from shapely.geometry import shape
 from alive_progress import alive_bar
 
 from .mongo_connector import save_data
