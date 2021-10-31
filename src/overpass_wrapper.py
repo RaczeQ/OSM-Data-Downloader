@@ -2,9 +2,10 @@ from functools import singledispatch
 
 import geopandas as gpd
 import pandas as pd
+from alive_progress import alive_bar
 from geojson import Point
 from OSMPythonTools.overpass import Overpass
-from alive_progress import alive_bar
+from shapely.geometry import shape
 
 from .mongo_connector import save_data
 from .overpass_queries import QUERIES
@@ -39,6 +40,7 @@ def _parse_geometry(element):
         for key, value in element.tags().items():
             dict_data[key] = value
     try:
+        shape(element.geometry())
         dict_data['geometry'] = element.geometry()
         dicts.append(dict_data)
     except Exception as ex:
