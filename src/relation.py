@@ -29,15 +29,19 @@ def load_area(relation: Union[str, int]):
         if relation_name is None:
             relation_name = name
         bbox = relation['boundingbox']
+        lat = float(relation['lat'])
+        lon = float(relation['lon'])
         shp = loads(relation['geotext'])
         gdf = gpd.GeoDataFrame({'geometry':[shp]})
-        relation_cls = BoundaryRelation(osm_id, relation_name, name, bbox, gdf)
+        relation_cls = BoundaryRelation(osm_id, relation_name, name, bbox, lat, lon, gdf)
         return relation_cls
 
 class BoundaryRelation:
-    def __init__(self, osm_id, relation_name, administration_name, bbox, geojson_shp):
+    def __init__(self, osm_id, relation_name, administration_name, bbox, lat, lon, geojson_shp):
         self.gdf = geojson_shp
         self.gdf['osm_id'] = osm_id
+        self.gdf['lat'] = lat
+        self.gdf['lon'] = lon
         self.gdf['relation_name'] = relation_name
         self.gdf['administration_name'] = administration_name
         print(self.gdf)
